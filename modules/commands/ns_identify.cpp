@@ -82,6 +82,17 @@ class CommandNSIdentify : public Command
 			return;
 		}
 
+		// Prevent unconfirmed users from identifying
+		if(na && na->nc->HasExt("UNCONFIRMED"))
+		{
+			source.Reply(_("Your email address is not confirmed. To confirm it, follow the instructions that were emailed to you."));
+			time_t time_registered = Anope::CurTime - na->time_registered;
+			time_t unconfirmed_expire = Config->GetModule(this->owner)->Get<time_t>("unconfirmedexpire", "1d");
+			if(unconfirmed_expire > time_registered)
+				source.Reply(_("Your account will expire, if not confirmed, in %s."), Anope::Duration(unconfirmed_expire - time_registered, na->nc).c_str());
+			return;
+		}
+
 		if (u->Account() && na && u->Account() == na->nc)
 		{
 			source.Reply(_("You are already identified."));
