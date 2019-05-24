@@ -1,6 +1,6 @@
 /* Routines to maintain a list of online users.
  *
- * (C) 2003-2017 Anope Team
+ * (C) 2003-2019 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -561,7 +561,12 @@ void User::RemoveModeInternal(const MessageSource &source, UserMode *um)
 	this->modes.erase(um->name);
 
 	if (um->name == "OPER")
+	{
 		--OperCount;
+
+		// Don't let people de-oper and remain a SuperAdmin
+		this->super_admin = false;
+	}
 
 	if (um->name == "CLOAK" || um->name == "VHOST")
 	{

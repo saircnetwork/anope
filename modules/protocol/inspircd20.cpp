@@ -1,6 +1,6 @@
 /* Inspircd 2.0 functions
  *
- * (C) 2003-2017 Anope Team
+ * (C) 2003-2019 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -37,7 +37,7 @@ class InspIRCd20Proto : public IRCDProto
 	void SendConnect() anope_override
 	{
 		UplinkSocket::Message() << "CAPAB START 1202";
-		UplinkSocket::Message() << "CAPAB CAPABILITIES :PROTOCOL=1202";
+		UplinkSocket::Message() << "CAPAB CAPABILITIES :PROTOCOL=1202 CASEMAPPING=" << Config->GetBlock("options")->Get<const Anope::string>("casemap", "ascii");
 		UplinkSocket::Message() << "CAPAB END";
 		insp12->SendConnect();
 	}
@@ -369,6 +369,20 @@ class ChannelModeRedirect : public ChannelModeParam
 	}
 };
 
+struct IRCDMessageAway : Message::Away
+{
+	IRCDMessageAway(Module *creator) : Message::Away(creator, "AWAY") { SetFlag(IRCDMESSAGE_REQUIRE_USER); }
+
+	void Run(MessageSource &source, const std::vector<Anope::string> &params) anope_override
+	{
+		std::vector<Anope::string> newparams(params);
+		if (newparams.size() > 1)
+			newparams.erase(newparams.begin());
+
+		Message::Away::Run(source, newparams);
+	}
+};
+
 struct IRCDMessageCapab : Message::Capab
 {
 	std::map<char, Anope::string> chmodes, umodes;
@@ -396,6 +410,7 @@ struct IRCDMessageCapab : Message::Capab
 			Servers::Capab.insert("SERVERS");
 			Servers::Capab.insert("TOPICLOCK");
 			IRCD->CanSVSHold = false;
+			IRCD->DefaultPseudoclientModes = "+I";
 		}
 		else if (params[0].equals_cs("CHANMODES") && params.size() > 1)
 		{
@@ -548,7 +563,10 @@ struct IRCDMessageCapab : Message::Capab
 				UserMode *um = NULL;
 
 				if (modename.equals_cs("bot"))
+				{
 					um = new UserMode("BOT", modechar[0]);
+					IRCD->DefaultPseudoclientModes += modechar;
+				}
 				else if (modename.equals_cs("callerid"))
 					um = new UserMode("CALLERID", modechar[0]);
 				else if (modename.equals_cs("cloak"))
@@ -651,7 +669,7 @@ struct IRCDMessageCapab : Message::Capab
 				if (capab.find("CHANMODES") != Anope::string::npos)
 				{
 					Anope::string modes(capab.begin() + 10, capab.end());
-					commasepstream sep(modes);
+					commasepstream sep(modes, true);
 					Anope::string modebuf;
 
 					sep.GetToken(modebuf);
@@ -689,7 +707,7 @@ struct IRCDMessageCapab : Message::Capab
 				else if (capab.find("USERMODES") != Anope::string::npos)
 				{
 					Anope::string modes(capab.begin() + 10, capab.end());
-					commasepstream sep(modes);
+					commasepstream sep(modes, true);
 					Anope::string modebuf;
 
 					sep.GetToken(modebuf);
@@ -925,7 +943,6 @@ class ProtoInspIRCd20 : public Module
 	InspIRCd20Proto ircd_proto;
 
 	/* Core message handlers */
-	Message::Away message_away;
 	Message::Error message_error;
 	Message::Invite message_invite;
 	Message::Join message_join;
@@ -947,6 +964,7 @@ class ProtoInspIRCd20 : public Module
 				message_squit, message_time, message_uid;
 
 	/* Our message handlers */
+	IRCDMessageAway message_away;
 	IRCDMessageCapab message_capab;
 	IRCDMessageEncap message_encap;
 	IRCDMessageFHost message_fhost;
@@ -964,9 +982,9 @@ class ProtoInspIRCd20 : public Module
  public:
 	ProtoInspIRCd20(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, PROTOCOL | VENDOR),
 		ircd_proto(this),
-		message_away(this), message_error(this), message_invite(this), message_join(this), message_kick(this),
-		message_kill(this), message_motd(this), message_notice(this), message_part(this), message_ping(this),
-		message_privmsg(this), message_quit(this), message_stats(this), message_topic(this),
+		message_error(this), message_invite(this), message_join(this), message_kick(this), message_kill(this),
+		message_motd(this), message_notice(this), message_part(this), message_ping(this), message_privmsg(this),
+		message_quit(this), message_stats(this), message_topic(this),
 
 		message_endburst("IRCDMessage", "inspircd20/endburst", "inspircd12/endburst"),
 		message_fjoin("IRCDMessage", "inspircd20/fjoin", "inspircd12/fjoin"),
@@ -982,8 +1000,8 @@ class ProtoInspIRCd20 : public Module
 		message_time("IRCDMessage", "inspircd20/time", "inspircd12/time"),
 		message_uid("IRCDMessage", "inspircd20/uid", "inspircd12/uid"),
 
-		message_capab(this), message_encap(this), message_fhost(this), message_fident(this), message_metadata(this, use_server_side_topiclock, use_server_side_mlock),
-		message_save(this)
+		message_away(this), message_capab(this), message_encap(this), message_fhost(this), message_fident(this),
+		message_metadata(this, use_server_side_topiclock, use_server_side_mlock), message_save(this)
 	{
 
 		if (ModuleManager::LoadModule("inspircd12", User::Find(creator)) != MOD_ERR_OK)
