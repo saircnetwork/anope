@@ -255,6 +255,13 @@ class CommandNSRegister : public Command
 			{
 				// This notifies the user that if their registration is unconfirmed
 				u->Identify(na);
+
+				// Prevent identifying
+				if(!nsregister.equals_ci("mail"))
+					u->Identify(na);
+				else
+					source.Reply(_("Your email address is not confirmed. To confirm it, follow the instructions that were emailed to you."));
+
 				u->lastnickreg = Anope::CurTime;
 			}
 			else if (nc->HasExt("UNCONFIRMED"))
