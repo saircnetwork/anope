@@ -56,35 +56,40 @@ class CommandNSConfirm : public Command
 				}
 			}
 		}
-		else if (source.nc)
+		else
 		{
-			Anope::string *code = source.nc->GetExt<Anope::string>("passcode");
-			if (code != NULL && *code == passcode)
-			{
-				NickCore *nc = source.nc;
-				nc->Shrink<Anope::string>("passcode");
-				Log(LOG_COMMAND, source, this) << "to confirm their email";
-				source.Reply(_("Your email address of \002%s\002 has been confirmed."), source.nc->email.c_str());
-				nc->Shrink<bool>("UNCONFIRMED");
-				FOREACH_MOD(OnNickConfirm, (source.GetUser(), nc));
+			// Allow non-identified users to confirm
+			NickAlias *na = NickAlias::Find(source.GetNick());
 
-				if (source.GetUser())
+			if(na == NULL)
+				source.Reply(NICK_X_NOT_REGISTERED, source.GetNick().c_str());
+			else if (na->nc->HasExt("UNCONFIRMED") == false)
+				source.Reply(_("Nick \002%s\002 is already confirmed."), na->nick.c_str());
+			else
+			{
+				NickCore *nc = na->nc;
+				Anope::string *code = nc->GetExt<Anope::string>("passcode");
+
+				if(code != NULL && *code == passcode)
 				{
-					NickAlias *na = NickAlias::Find(source.GetNick());
-					if (na)
+					nc->Shrink<Anope::string>("passcode");
+					Log(LOG_COMMAND, source, this) << "to confirm their email";
+					source.Reply(_("Your email address of \002%s\002 has been confirmed."), source.nc->email.c_str());
+					nc->Shrink<bool>("UNCONFIRMED");
+					FOREACH_MOD(OnNickConfirm, (source.GetUser(), nc));
+
+					if (source.GetUser())
 					{
+						source.GetUser()->Identify(na);
 						IRCD->SendLogin(source.GetUser(), na);
 						if (!Config->GetModule("nickserv")->Get<bool>("nonicknameownership") && na->nc == source.GetAccount() && !na->nc->HasExt("UNCONFIRMED"))
 							source.GetUser()->SetMode(source.service, "REGISTERED");
 					}
 				}
+				else
+					source.Reply(_("Invalid passcode."));
 			}
-			else
-				source.Reply(_("Invalid passcode."));
 		}
-		else
-			source.Reply(_("Invalid passcode."));
-
 		return;
 	}
 
