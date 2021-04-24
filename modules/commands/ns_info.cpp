@@ -1,6 +1,6 @@
 /* NickServ core functions
  *
- * (C) 2003-2020 Anope Team
+ * (C) 2003-2021 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -60,6 +60,7 @@ class CommandNSInfo : public Command
 
 			InfoFormatter info(source.nc);
 
+			info[_("Account")] = na->nc->display;
 			if (nick_online)
 			{
 				bool shown = false;

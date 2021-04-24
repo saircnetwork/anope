@@ -1,6 +1,6 @@
 /* InspIRCd 2.0 functions
  *
- * (C) 2003-2020 Anope Team
+ * (C) 2003-2021 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -37,7 +37,7 @@ class InspIRCd20Proto : public IRCDProto
 	void SendConnect() anope_override
 	{
 		UplinkSocket::Message() << "CAPAB START 1202";
-		UplinkSocket::Message() << "CAPAB CAPABILITIES :PROTOCOL=1202 CASEMAPPING=" << Config->GetBlock("options")->Get<const Anope::string>("casemap", "ascii");
+		UplinkSocket::Message() << "CAPAB CAPABILITIES :PROTOCOL=1202";
 		UplinkSocket::Message() << "CAPAB END";
 		insp12->SendConnect();
 	}

@@ -1,6 +1,6 @@
 /* Unreal IRCD 4 functions
  *
- * (C) 2003-2020 Anope Team
+ * (C) 2003-2021 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -18,7 +18,7 @@ static Anope::string UplinkSID;
 class UnrealIRCdProto : public IRCDProto
 {
  public:
-	UnrealIRCdProto(Module *creator) : IRCDProto(creator, "UnrealIRCd 4")
+	UnrealIRCdProto(Module *creator) : IRCDProto(creator, "UnrealIRCd 4+")
 	{
 		DefaultPseudoclientModes = "+Soiq";
 		CanSVSNick = true;

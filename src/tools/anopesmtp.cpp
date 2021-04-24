@@ -1,6 +1,6 @@
 /* smtp stuff handler for win32.
  *
- * (C) 2003-2020 Anope Team
+ * (C) 2003-2021 Anope Team
  * Contact us at team@anope.org
  *
  * Please read COPYING and README for further details.
@@ -112,9 +112,9 @@ static std::string GetTimeStamp()
 {
 	char tbuf[256];
 	time_t t = time(NULL);
-	struct tm *tm = localtime(&t);
+	struct tm *tm = gmtime(&t);
 
-	strftime(tbuf, sizeof(tbuf) - 1, "%a, %d %b %Y %H:%M:%S %z", tm);
+	strftime(tbuf, sizeof(tbuf) - 1, "%a, %d %b %Y %H:%M:%S +0000", tm);
 
 	return tbuf;
 }
